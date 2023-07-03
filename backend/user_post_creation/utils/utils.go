@@ -40,3 +40,15 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "User logged in successfully")
 
 }
+
+func UserDetails(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func GetPostById(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+
+}
