@@ -1,0 +1,43 @@
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .profile-heading {
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .section-heading {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .user-details,
+  .photos,
+  .followers,
+  .following {
+    margin-bottom: 20px;
+  }
+  
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 10px;
+  }
+  
+  .photo {
+    width: 100%;
+    height: auto;
+  }
+  
+  .back-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
