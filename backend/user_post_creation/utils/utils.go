@@ -55,32 +55,36 @@ func UserDetails(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(userDetails)
 }
 
-func GetPostById(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	idStr := params["id"]
-	post, err := PostById(idStr)
-	if err != nil {
-		http.Error(w, "Invalid post id", http.StatusBadRequest)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(post)
-}
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	userID := mux.Vars(r)["id"]
 
-func CreatePost(w http.ResponseWriter, r *http.Request) {
-	post := model.Post{}
-	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+	// Parse the updated user details from the request body
+	var updatedUser model.User
+	err := json.NewDecoder(r.Body).Decode(&updatedUser)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	resultId, err := SavePost(post)
+	err = EditUserDetails(userID, updatedUser)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	post.Id = resultId
-	response := model.Response{Data: post, Status: 200}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "User updated successfully")
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	userID := mux.Vars(r)["id"]
+
+	err := DeleteUSer(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "User deleted successfully")
 }

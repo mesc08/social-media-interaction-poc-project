@@ -82,58 +82,55 @@ func RegisterUser(user model.User) error {
 	return nil
 }
 
-func GetUserDetails(userid string) (model.UserDetails, error) {
+func GetUserDetails(userid string) (model.User, error) {
 	PSG, err := ConnectToDB("")
 	if err != nil {
 		log.Errorf("Unable to connect to DB %+v", err)
-		return model.UserDetails{}, err
+		return model.User{}, err
 	}
 	var user model.User
 	if err := PSG.QueryRow("SELECT username, firstname, lastname, mobile, id FROM users where id = $1", userid).Scan(&user.Email, &user.Fname, &user.Lname, &user.Mobile, &user.Id); err != nil {
 		if err == sql.ErrNoRows {
-			return model.UserDetails{}, err
+			return model.User{}, err
 		} else {
-			return model.UserDetails{}, err
+			return model.User{}, err
 		}
 	}
-
-	var followersCount int
-	if err := PSG.QueryRow("SELECT COUNT(*) FROM followers WHERE user_id = $1", userid).Scan(&followersCount); err != nil {
-		return model.UserDetails{User: user, Followers: 0, ProfileImage: ""}, err
-	}
-
-	// Retrieve the profile image URL from the database
-	var profileImageURL string
-	if err = PSG.QueryRow("SELECT profile_image FROM users WHERE id = $1", userid).Scan(&profileImageURL); err != nil {
-		return model.UserDetails{User: user, Followers: followersCount, ProfileImage: ""}, err
-	}
 	PSG.Close()
-	return model.UserDetails{User: user, Followers: followersCount, ProfileImage: profileImageURL}, nil
+	return user, nil
 }
 
-func SavePost(post model.Post) (int64, error) {
+func DeleteUSer(userid string) error {
 	PSG, err := ConnectToDB("")
 	if err != nil {
-		log.Errorf("Unable to connect to DB %+v", err)
-		return -1, err
+		return err
 	}
-	result, err := PSG.Exec("INSERT INTO posts (user_id, title, content) VALUES ($1, $2, $3)", post.Authorid, post.Title, post.Content)
+	stmt, err := PSG.Prepare("DELETE FROM users WHERE id = $1")
 	if err != nil {
-		return -1, err
+		return err
 	}
-	PSG.Close()
-	return result.LastInsertId()
+	defer stmt.Close()
+	_, err = stmt.Exec(userid)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
-func PostById(idStr string) (model.Post, error) {
+func EditUserDetails(userID string, updatedUser model.User) error {
 	PSG, err := ConnectToDB("")
 	if err != nil {
-		return model.Post{}, err
+		return err
 	}
-	var post model.Post
-	if err := PSG.QueryRow("SELECT * FROM posts WHERE id = $1", idStr).Scan(&post.Id, &post.Authorid, &post.Title, &post.Content); err != nil {
-		return model.Post{}, err
+	stmt, err := PSG.Prepare("UPDATE user SET name = $1, email = $2 WHERE id = $3")
+	defer stmt.Close()
+	if err != nil {
+		return err
 	}
-	PSG.Close()
-	return post, nil
+
+	if _, err = stmt.Exec(updatedUser.Fname, updatedUser.Email, updatedUser.Id); err != nil {
+		return err
+	}
+	return nil
 }
