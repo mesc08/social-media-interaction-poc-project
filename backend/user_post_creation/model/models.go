@@ -11,10 +11,11 @@ type User struct {
 }
 
 type Post struct {
-	Id       string `json:"id"`
+	Id       int64  `json:"id"`
 	Content  string `json:"content"`
 	Authorid string `json:"authorid"`
 	Likes    int    `json:"Likes"`
+	Title    string `json:"title"`
 }
 
 type Comment struct {
@@ -23,4 +24,16 @@ type Comment struct {
 	Authorid string `json:"authorid"`
 	Postid   string `json:"postid"`
 	Likes    int    `json:"Likes"`
+}
+
+type UserDetails struct {
+	User         User   `json:"user"`
+	Followers    int    `json:"followers"`
+	ProfileImage string `json:"profile_image"`
+}
+
+type Response struct {
+	Data   interface{} `json:"data"`
+	Status int         `json:"status"`
+	Msg    string      `json:"error"`
 }

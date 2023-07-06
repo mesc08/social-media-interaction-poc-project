@@ -81,3 +81,59 @@ func RegisterUser(user model.User) error {
 
 	return nil
 }
+
+func GetUserDetails(userid string) (model.UserDetails, error) {
+	PSG, err := ConnectToDB("")
+	if err != nil {
+		log.Errorf("Unable to connect to DB %+v", err)
+		return model.UserDetails{}, err
+	}
+	var user model.User
+	if err := PSG.QueryRow("SELECT username, firstname, lastname, mobile, id FROM users where id = $1", userid).Scan(&user.Email, &user.Fname, &user.Lname, &user.Mobile, &user.Id); err != nil {
+		if err == sql.ErrNoRows {
+			return model.UserDetails{}, err
+		} else {
+			return model.UserDetails{}, err
+		}
+	}
+
+	var followersCount int
+	if err := PSG.QueryRow("SELECT COUNT(*) FROM followers WHERE user_id = $1", userid).Scan(&followersCount); err != nil {
+		return model.UserDetails{User: user, Followers: 0, ProfileImage: ""}, err
+	}
+
+	// Retrieve the profile image URL from the database
+	var profileImageURL string
+	if err = PSG.QueryRow("SELECT profile_image FROM users WHERE id = $1", userid).Scan(&profileImageURL); err != nil {
+		return model.UserDetails{User: user, Followers: followersCount, ProfileImage: ""}, err
+	}
+	PSG.Close()
+	return model.UserDetails{User: user, Followers: followersCount, ProfileImage: profileImageURL}, nil
+}
+
+func SavePost(post model.Post) (int64, error) {
+	PSG, err := ConnectToDB("")
+	if err != nil {
+		log.Errorf("Unable to connect to DB %+v", err)
+		return -1, err
+	}
+	result, err := PSG.Exec("INSERT INTO posts (user_id, title, content) VALUES ($1, $2, $3)", post.Authorid, post.Title, post.Content)
+	if err != nil {
+		return -1, err
+	}
+	PSG.Close()
+	return result.LastInsertId()
+}
+
+func PostById(idStr string) (model.Post, error) {
+	PSG, err := ConnectToDB("")
+	if err != nil {
+		return model.Post{}, err
+	}
+	var post model.Post
+	if err := PSG.QueryRow("SELECT * FROM posts WHERE id = $1", idStr).Scan(&post.Id, &post.Authorid, &post.Title, &post.Content); err != nil {
+		return model.Post{}, err
+	}
+	PSG.Close()
+	return post, nil
+}
