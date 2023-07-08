@@ -12,4 +12,5 @@ func CreateEndpoints(router *mux.Router) {
 	router.HandleFunc("/user/{id}", utils.UserDetails).Methods("GET")
 	router.HandleFunc("/user/{id}", utils.UpdateUser).Methods("PUT")
 	router.HandleFunc("/user/{id}", utils.DeleteUser).Methods("DELETE")
+	router.HandleFunc("/upload/image/{id}", utils.UploadImage).Methods("POST")
 }

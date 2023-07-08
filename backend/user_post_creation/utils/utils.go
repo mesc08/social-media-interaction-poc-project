@@ -3,8 +3,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"user_post_creation/model"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 
 	"github.com/gorilla/mux"
 )
@@ -87,4 +92,59 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "User deleted successfully")
+}
+
+func UploadImage(w http.ResponseWriter, r *http.Request) {
+	userID := mux.Vars(r)["id"]
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to get file from form data", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+	fileUrl, err := PutFileInS3(file, handler)
+	if err != nil {
+		http.Error(w, "Faled to upload file in s3", http.StatusBadRequest)
+		return
+	}
+	if err := StoreFileInUserDetails(fileUrl, userID); err != nil {
+		http.Error(w, "Unable to store file in db", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(fileUrl)
+}
+
+func CreateS3Session() (*session.Session, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("ap-south1"),
+	})
+	return sess, err
+}
+
+func PutFileInS3(file multipart.File, handler *multipart.FileHeader) (string, error) {
+	sess, err := CreateS3Session()
+	if err != nil {
+		return "", err
+	}
+
+	svc := s3.New(sess)
+	bucketName := "s3export"
+	fileName := handler.Filename
+	input := &s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(fileName),
+		Body:   file,
+	}
+	_, err = svc.PutObject(input)
+	if err != nil {
+		return "", err
+	}
+	fileURL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, fileName)
+	return fileURL, nil
 }

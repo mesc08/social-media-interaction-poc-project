@@ -105,6 +105,7 @@ func DeleteUSer(userid string) error {
 	if err != nil {
 		return err
 	}
+	defer PSG.Close()
 	stmt, err := PSG.Prepare("DELETE FROM users WHERE id = $1")
 	if err != nil {
 		return err
@@ -123,13 +124,32 @@ func EditUserDetails(userID string, updatedUser model.User) error {
 	if err != nil {
 		return err
 	}
+	defer PSG.Close()
 	stmt, err := PSG.Prepare("UPDATE user SET name = $1, email = $2 WHERE id = $3")
-	defer stmt.Close()
+
 	if err != nil {
 		return err
 	}
-
+	defer stmt.Close()
 	if _, err = stmt.Exec(updatedUser.Fname, updatedUser.Email, updatedUser.Id); err != nil {
+		return err
+	}
+	return nil
+}
+
+func StoreFileInUserDetails(fileURl string, id string) error {
+	PSG, err := ConnectToDB("")
+	if err != nil {
+		return err
+	}
+	defer PSG.Close()
+	stmt, err := PSG.Prepare("UPDATE user SET profilepic = $1 WHERE id = $2")
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	if _, err = stmt.Exec(fileURl, id); err != nil {
 		return err
 	}
 	return nil
