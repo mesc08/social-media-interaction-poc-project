@@ -89,7 +89,7 @@ func GetUserDetails(userid string) (model.User, error) {
 		return model.User{}, err
 	}
 	var user model.User
-	if err := PSG.QueryRow("SELECT username, firstname, lastname, mobile, id FROM users where id = $1", userid).Scan(&user.Email, &user.Fname, &user.Lname, &user.Mobile, &user.Id); err != nil {
+	if err := PSG.QueryRow("SELECT username, firstname, lastname, mobile, id, profilepic FROM users where id = $1", userid).Scan(&user.Email, &user.Fname, &user.Lname, &user.Mobile, &user.Id); err != nil {
 		if err == sql.ErrNoRows {
 			return model.User{}, err
 		} else {
