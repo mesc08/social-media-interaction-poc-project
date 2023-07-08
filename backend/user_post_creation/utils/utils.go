@@ -26,7 +26,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !valid {
-		http.Error(w, fmt.Errorf("User not found or password mismatched").Error(), http.StatusNotFound)
+		http.Error(w, "User not found or password mismatched", http.StatusNotFound)
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)

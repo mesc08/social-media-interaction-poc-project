@@ -33,11 +33,11 @@ func ConnectToDB(conn string) (*sql.DB, error) {
 func ValidateUser(username, password string) (bool, error) {
 	var hashedPassword string
 	PSG, err := ConnectToDB("")
-	defer PSG.Close()
 	if err != nil {
 		log.Errorf("Unable to connect to DB %+v", err)
 		return false, err
 	}
+	defer PSG.Close()
 	if err := PSG.QueryRow("SELECT password FROM users WHERE username =$1", username).Scan(&hashedPassword); err != nil {
 		if err == sql.ErrNoRows {
 			log.Infof("user %v not found", username)
