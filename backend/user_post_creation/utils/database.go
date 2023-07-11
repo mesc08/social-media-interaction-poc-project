@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"user_post_creation/config"
 	"user_post_creation/model"
 
 	log "github.com/sirupsen/logrus"
@@ -17,7 +18,22 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func ConnectToDB(conn string) (*sql.DB, error) {
+func GetPSGConn() string {
+
+	cfg := model.DBConfig{
+		User:     config.ViperConfig.PSGUser,
+		Password: config.ViperConfig.PSGPass,
+		Host:     config.ViperConfig.PSGHost,
+		Port:     config.ViperConfig.PSGPort,
+		Database: config.ViperConfig.PSGDB,
+	}
+	return fmt.Sprintf(
+		"user=%s password=%s dbname=%s host=%s port=%v sslmode=disable",
+		cfg.User, cfg.Password, cfg.Database, cfg.Host, cfg.Port)
+}
+
+func ConnectToDB() (*sql.DB, error) {
+	conn := GetPSGConn()
 	var err error
 	PSG, err := sql.Open("postgres", conn)
 	if err != nil {
@@ -32,12 +48,16 @@ func ConnectToDB(conn string) (*sql.DB, error) {
 
 func ValidateUser(username, password string) (bool, error) {
 	var hashedPassword string
-	PSG, err := ConnectToDB("")
+	PSG, err := ConnectToDB()
 	if err != nil {
 		log.Errorf("Unable to connect to DB %+v", err)
 		return false, err
 	}
 	defer PSG.Close()
+	createTableQuery := CreateUserTableIfNotExist()
+	if _, err := PSG.Exec(createTableQuery); err != nil {
+		return false, err
+	}
 	if err := PSG.QueryRow("SELECT password FROM users WHERE username =$1", username).Scan(&hashedPassword); err != nil {
 		if err == sql.ErrNoRows {
 			log.Infof("user %v not found", username)
@@ -67,13 +87,19 @@ func RegisterUser(user model.User) error {
 	if err != nil {
 		return err
 	}
-	PSG, err := ConnectToDB("")
+	PSG, err := ConnectToDB()
 	if err != nil {
 		log.Errorf("Unable to connect to DB %+v", err)
 		return err
 	}
 
-	_, err = PSG.Exec("INSERT INTO users (username, password, firstname, lastname, mobile, id) VALUES ($1, $2, $3, $4, $5)", user.Email, string(hashedPassword), user.Fname, user.Lname, user.Id)
+	createTableQuery := CreateUserTableIfNotExist()
+
+	_, err = PSG.Exec(createTableQuery)
+	if err != nil {
+		return err
+	}
+	_, err = PSG.Exec("INSERT INTO users (username, password, firstname, lastname, mobile, userid, profilepic) VALUES ($1, $2, $3, $4, $5, $6)", user.Email, string(hashedPassword), user.Fname, user.Lname, user.Id, user.ProfileImage)
 	PSG.Close()
 	if err != nil {
 		return err
@@ -83,13 +109,19 @@ func RegisterUser(user model.User) error {
 }
 
 func GetUserDetails(userid string) (model.User, error) {
-	PSG, err := ConnectToDB("")
+	PSG, err := ConnectToDB()
 	if err != nil {
 		log.Errorf("Unable to connect to DB %+v", err)
 		return model.User{}, err
 	}
+	createTableQuery := CreateUserTableIfNotExist()
+
+	_, err = PSG.Exec(createTableQuery)
+	if err != nil {
+		return model.User{}, err
+	}
 	var user model.User
-	if err := PSG.QueryRow("SELECT username, firstname, lastname, mobile, id, profilepic FROM users where id = $1", userid).Scan(&user.Email, &user.Fname, &user.Lname, &user.Mobile, &user.Id); err != nil {
+	if err := PSG.QueryRow("SELECT username, firstname, lastname, mobile, userid, profilepic FROM users where userid = $1", userid).Scan(&user.Email, &user.Fname, &user.Lname, &user.Mobile, &user.Id); err != nil {
 		if err == sql.ErrNoRows {
 			return model.User{}, err
 		} else {
@@ -101,7 +133,7 @@ func GetUserDetails(userid string) (model.User, error) {
 }
 
 func DeleteUSer(userid string) error {
-	PSG, err := ConnectToDB("")
+	PSG, err := ConnectToDB()
 	if err != nil {
 		return err
 	}
@@ -120,7 +152,7 @@ func DeleteUSer(userid string) error {
 }
 
 func EditUserDetails(userID string, updatedUser model.User) error {
-	PSG, err := ConnectToDB("")
+	PSG, err := ConnectToDB()
 	if err != nil {
 		return err
 	}
@@ -138,7 +170,7 @@ func EditUserDetails(userID string, updatedUser model.User) error {
 }
 
 func StoreFileInUserDetails(fileURl string, id string) error {
-	PSG, err := ConnectToDB("")
+	PSG, err := ConnectToDB()
 	if err != nil {
 		return err
 	}
@@ -153,4 +185,18 @@ func StoreFileInUserDetails(fileURl string, id string) error {
 		return err
 	}
 	return nil
+}
+
+func CreateUserTableIfNotExist() string {
+	return `
+	CREATE TABLE IF NOT EXISTS users (
+		username VARCHAR(50) PRIMARY KEY,
+		password VARCHAR(50) NOT NULL,
+		firstname VARCHAR(50) NOT NULL,
+		lastname VARCHAR(50) NOT NULL,
+		mobile INT NOT NULL,
+		userid VARCHAR(50) NOT NULL,
+		profilepic VARCHAR(50)
+	);
+`
 }

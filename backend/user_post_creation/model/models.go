@@ -11,12 +11,33 @@ type User struct {
 	Password        string    `json:"password"`
 	ConfirmPassword string    `json:"confirmpassword,omitempty"`
 	ProfileImage    string    `json:"profile_image"`
-	CreateAt        time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at`
+	CreateAt        time.Time `json:"createdat"`
+	Udate           time.Time `json:"updatedat`
 }
 
 type Response struct {
 	Data   interface{} `json:"data"`
 	Status int         `json:"status"`
 	Msg    string      `json:"error"`
+}
+
+type DBConfig struct {
+	User     string
+	Password string
+	Host     string
+	Port     int
+	Database string
+}
+
+type Config struct {
+	AwsRegion    string `json:"awsregion"`
+	AwsID        string `json:"awsid"`
+	AwsSecretKey string `json:"awssecret"`
+	PSGUser      string `json:"psguser"`
+	PSGHost      string `json:"psghost"`
+	PSGPass      string `json:"psgpass"`
+	PSGDB        string `json:"psgdb"`
+	PSGPort      int    `json:"psgport"`
+	S3Bucket     string `json:"s3bucket"`
+	ServiceHost  string `json:"servicehost"`
 }

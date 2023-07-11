@@ -1,0 +1,12 @@
+{
+    "awsregion":"",
+    "awsid": "",
+    "awssecret": "",
+    "psguser": "",
+    "psghost": "",
+    "psgpass": "",
+    "psgdb": "",
+    "psgport": 5432,
+    "s3bucket": "",
+    "servicehost": ":8100"
+}

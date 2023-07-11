@@ -18,5 +18,5 @@ func init() {
 func main() {
 	router := mux.NewRouter()
 	endpoints.CreateEndpoints(router)
-	http.ListenAndServe(":8100", router)
+	http.ListenAndServe(config.ViperConfig.ServiceHost, router)
 }
